@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+from pathlib import Path
 import logging
 import subprocess
 
@@ -18,33 +19,55 @@ versions = {}
 def create_reqs():
     path = sys.argv[1]
     file_path = path + '/requirements.txt'
-    try:
+    
+    if Path(file_path).exists():    
         with open(file_path):
             os.system('mv ' + file_path + ' ' + path + '/old_reqs.txt')
             os.system('pipreqs ' + path)
             os.system('mv ' + file_path + ' ' + path + '/pip_reqs.txt')
             mixer(path + '/old_reqs.txt', path + '/pip_reqs.txt')
-            os.system('rm ' + path + '/pip_reqs.txt')
-            # os.system('rm ' +   path + '/old_reqs.txt')
-    except Exception as e:
-        print(e)
+    else:
         os.system('pipreqs ' + path)
+        fill_lists(file_path)
     
+    update_setup(path)
+
+        # os.system('rm ' + path + '/pip_reqs.txt')
+        # os.system('rm ' +   path + '/old_reqs.txt')
+
+def update_setup(path):
+    #assumes the file exists
+    setup_path = path + '/setup.py'
+    os.system('mv ' + setup_path + ' ' + path + '/old_setup.py')
+    with open(path + '/old_setup.py', 'r') as sp, open(setup_path, 'w+') as ns:
+        line = sp.readline()
+        while not re.compile(r'install_requires').search(line):
+            ns.write(line)
+            line = sp.readline()
+
+        ns.write(line)
+        for package in packages[0:-1]:
+            ns.write(package + ',\n')
+            
+        ns.write(package + '\n')
+        line = sp.readline()
+        while line:
+            ns.write(line)
+            line = sp.readline()
 
 def mixer(path1, path2):
     print('mixer running')
-    with open(path1) as fp1, open(path2) as fp2:
-        line1 = fp1.readline()[0:-1]
-        while line1:
-            add_to_lists(line1)
-            line1 = fp1.readline()[0:-1]
-        
-        line2 = fp2.readline()[0:-1]
-        while line2:
-            add_to_lists(line2)
-            line2 = fp2.readline()[0:-1]
-
+    fill_lists(path1)
+    fill_lists(path2)
     write_packages_to_files('/'.join(path1.split('/')[0:-1]))
+
+
+def fill_lists(path):
+    with open(path) as fp:
+        line = fp.readline()[0:-1]
+        while line:
+            add_to_lists(line)
+            line = fp.readline()[0:-1]
 
 
 def write_packages_to_files(path):
