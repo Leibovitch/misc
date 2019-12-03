@@ -19,22 +19,23 @@ package_matcher = re.compile(r'^[-\w]+')
 def update_setup(path, packages):
     #assumes the file exists
     setup_path = path + '/setup.py'
-    os.rename(setup_path , path + '/old_setup.py')
+    move(setup_path , path + '/old_setup.py')
     with open(path + '/old_setup.py', 'r') as sp, open(setup_path, 'w+') as ns:
         line = sp.readline()
         while not re.compile(r'install_requires').search(line):
             ns.write(line)
             line = sp.readline()
 
-        ns.write(line)
-        for package in packages[0:-1]:
-            ns.write(package + ',\n')
+        ns.write("install_requires = [\'" + "\',\'".join(packages) + "\'])")
+        # ns.write(line)
+        # for package in packages[0:-1]:
+        #     ns.write(package + ',\n')
             
-        ns.write(package + '\n')
-        line = sp.readline()
-        while line:
-            ns.write(line)
-            line = sp.readline()
+        # ns.write(packages[-1] + '\n')
+        # line = sp.readline()
+        # while line:
+        #     ns.write(line)
+        #     line = sp.readline()
 
 
 def write_packages_to_files(path, packages: dict, irregs: set):
@@ -186,6 +187,6 @@ def create_reqs():
         res = input("[y/n]")
 
     if res == 'y':
-        update_setup(path, mixed.keys())
+        update_setup(path, list(mixed.keys()))
 
 create_reqs()
